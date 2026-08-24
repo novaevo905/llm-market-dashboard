@@ -342,6 +342,57 @@ def save_product(rows: list[dict]) -> None:
             )
 
 
+def aggregate_product_weekly(
+    price_by_date: dict[str, float],
+    usage_by_date: dict[str, float],
+) -> list[dict]:
+    """Week spend = avg(available SDLLMTK in week) × sum(usage week) × 1000.
+
+    Usage must be a complete ISO week (7 days). Price may lag 1 day behind usage;
+    use whatever price points exist in that week (need ≥1). Do NOT require
+    price∩usage overlap to also be 7 days — that wrongly drops the newest week.
+    """
+    buckets: dict[tuple[int, int], dict] = {}
+    for ds, u in usage_by_date.items():
+        d = datetime.strptime(ds, "%Y-%m-%d").date()
+        y, w, end = _iso_week_key(d)
+        key = (y, w)
+        if key not in buckets:
+            buckets[key] = {
+                "date": end,
+                "week": f"{y}-W{w:02d}",
+                "usage_days": 0,
+                "usage_sum": 0.0,
+                "price_sum": 0.0,
+                "price_days": 0,
+            }
+        b = buckets[key]
+        b["usage_days"] += 1
+        b["usage_sum"] += float(u)
+        if ds in price_by_date:
+            b["price_sum"] += float(price_by_date[ds])
+            b["price_days"] += 1
+    out: list[dict] = []
+    for key in sorted(buckets):
+        b = buckets[key]
+        if b["usage_days"] < 7 or b["price_days"] < 1:
+            continue
+        avg_p = b["price_sum"] / b["price_days"]
+        spend = avg_p * b["usage_sum"] * BILLION_TO_MILLION
+        out.append(
+            {
+                "date": b["date"],
+                "week": b["week"],
+                "days": b["usage_days"],
+                "price_days": b["price_days"],
+                "price_sdllmtk_avg": avg_p,
+                "usage_total_b_sum": b["usage_sum"],
+                "spend_usd_week": spend,
+            }
+        )
+    return out
+
+
 # ---------- charts ----------
 def _chart_shell(title: str, subtitle: str, body_js_data: str, y_label: str, color: str) -> str:
     return f"""<!DOCTYPE html>
@@ -811,7 +862,11 @@ render(mode);
     CHART_USAGE.write_text(html, encoding="utf-8")
 
 
-def write_product_chart(product_rows: list[dict]) -> None:
+def write_product_chart(
+    product_rows: list[dict],
+    price_daily: dict[str, float] | None = None,
+    usage_total: dict[str, float] | None = None,
+) -> None:
     """Price x usage with day/week; week uses weekly usage sum * week-avg price."""
     if not product_rows:
         return
@@ -825,41 +880,12 @@ def write_product_chart(product_rows: list[dict]) -> None:
         }
         for r in product_rows
     ]
-    # weekly: sum usage, avg price, spend = avg_price * sum_usage * 1000
-    buckets: dict[tuple[int, int], dict] = {}
-    for r in product_rows:
-        d = datetime.strptime(r["date"], "%Y-%m-%d").date()
-        y, w, end = _iso_week_key(d)
-        key = (y, w)
-        if key not in buckets:
-            buckets[key] = {
-                "date": end,
-                "week": f"{y}-W{w:02d}",
-                "days": 0,
-                "usage_sum": 0.0,
-                "price_sum": 0.0,
-            }
-        b = buckets[key]
-        b["days"] += 1
-        b["usage_sum"] += float(r["usage_total_b"])
-        b["price_sum"] += float(r["price_sdllmtk"])
-    week_rows = []
-    for key in sorted(buckets):
-        b = buckets[key]
-        if b["days"] < 7:
-            continue  # same rule as usage week: no partial week on chart/CSV
-        avg_p = b["price_sum"] / b["days"]
-        spend = avg_p * b["usage_sum"] * BILLION_TO_MILLION
-        week_rows.append(
-            {
-                "date": b["date"],
-                "week": b["week"],
-                "days": b["days"],
-                "price_sdllmtk_avg": avg_p,
-                "usage_total_b_sum": b["usage_sum"],
-                "spend_usd_week": spend,
-            }
-        )
+    # weekly: complete usage week × avg of available prices in that week
+    if price_daily is None:
+        price_daily = {r["date"]: float(r["price_sdllmtk"]) for r in product_rows}
+    if usage_total is None:
+        usage_total = {r["date"]: float(r["usage_total_b"]) for r in product_rows}
+    week_rows = aggregate_product_weekly(price_daily, usage_total)
     with PRODUCT_WEEKLY_CSV.open("w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(
             f,
@@ -1162,29 +1188,18 @@ def write_combined_dashboard(
     # --- product (aligned to usage axis when available) ---
     if product_rows:
         day_map = {r["date"]: round(r["spend_usd_day"], 2) for r in product_rows}
-        buckets: dict[tuple[int, int], dict] = {}
-        for r in product_rows:
-            d = datetime.strptime(r["date"], "%Y-%m-%d").date()
-            y, w, end = _iso_week_key(d)
-            key = (y, w)
-            if key not in buckets:
-                buckets[key] = {
-                    "date": end,
-                    "days": 0,
-                    "usage_sum": 0.0,
-                    "price_sum": 0.0,
-                }
-            b = buckets[key]
-            b["days"] += 1
-            b["usage_sum"] += float(r["usage_total_b"])
-            b["price_sum"] += float(r["price_sdllmtk"])
-        week_map: dict[str, float] = {}
-        for key in sorted(buckets):
-            b = buckets[key]
-            if b["days"] < 7:
-                continue
-            avg_p = b["price_sum"] / b["days"]
-            week_map[b["date"]] = round(avg_p * b["usage_sum"] * BILLION_TO_MILLION, 2)
+        usage_by_date = {
+            r["date"]: float(r["Total"])
+            for r in usage_rows
+            if r.get("date") and r.get("Total") not in (None, "")
+        }
+        if not usage_by_date:
+            usage_by_date = {r["date"]: float(r["usage_total_b"]) for r in product_rows}
+        price_for_week = {d: float(v) for d, v in price_by_date.items() if v is not None}
+        week_rows_prod = aggregate_product_weekly(price_for_week, usage_by_date)
+        week_map: dict[str, float] = {
+            r["date"]: round(r["spend_usd_week"], 2) for r in week_rows_prod
+        }
 
         if axis_max and day_min and week_labels:
             d_labels, d_vals = _pad_daily_map(day_map, day_min, axis_max)
@@ -2006,7 +2021,7 @@ def main() -> int:
     write_price_chart(price_daily, price_rows)
     if usage_rows:
         write_usage_chart(usage_rows)
-    write_product_chart(product_rows)
+    write_product_chart(product_rows, price_daily, usage_total)
     write_combined_dashboard(price_daily, price_rows, usage_rows, product_rows)
 
     meta = {
