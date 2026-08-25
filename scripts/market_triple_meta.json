@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-08-24T14:41:34",
-  "price_points": 84,
-  "price_daily": 265,
+  "updated_at": "2026-08-25T02:06:13",
+  "price_points": 85,
+  "price_daily": 266,
   "usage_days": 266,
-  "product_days": 265,
+  "product_days": 266,
   "last_price": {
-    "date": "2026-08-22",
-    "value": 1.0446,
+    "date": "2026-08-23",
+    "value": 1.0501,
     "source": "public_embed",
     "note": "portal token-index-chart RSC"
   },
@@ -15,18 +15,18 @@
     "Total": "15146.8630"
   },
   "last_product": {
-    "date": "2026-08-22",
-    "price_sdllmtk": 1.0446,
-    "usage_total_b": 14075.5365,
-    "spend_usd_day": 14703305.4279,
-    "product_raw": 14703.305427899999
+    "date": "2026-08-23",
+    "price_sdllmtk": 1.0501,
+    "usage_total_b": 15146.863,
+    "spend_usd_day": 15905720.836299999,
+    "product_raw": 15905.720836299999
   },
   "formula": "spend_usd_day = SDLLMTK * usage_total_b * 1000",
   "charts": [
-    "E:\\_Project\\股票研究\\產業知識庫\\03_產業鏈\\_llm_market_dashboard_fxgame_push\\scripts\\market_triple_dashboard.html",
-    "E:\\_Project\\股票研究\\產業知識庫\\03_產業鏈\\_llm_market_dashboard_fxgame_push\\scripts\\sdllmtk_chart.html",
-    "E:\\_Project\\股票研究\\產業知識庫\\03_產業鏈\\_llm_market_dashboard_fxgame_push\\scripts\\openrouter_usage_chart.html",
-    "E:\\_Project\\股票研究\\產業知識庫\\03_產業鏈\\_llm_market_dashboard_fxgame_push\\scripts\\expenditure_proxy_chart.html"
+    "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/market_triple_dashboard.html",
+    "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/sdllmtk_chart.html",
+    "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/openrouter_usage_chart.html",
+    "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/expenditure_proxy_chart.html"
   ],
-  "dashboard": "E:\\_Project\\股票研究\\產業知識庫\\03_產業鏈\\_llm_market_dashboard_fxgame_push\\scripts\\market_triple_dashboard.html"
+  "dashboard": "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/market_triple_dashboard.html"
 }
