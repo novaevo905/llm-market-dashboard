@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-09-03T04:59:57",
-  "price_points": 94,
-  "price_daily": 275,
+  "updated_at": "2026-09-04T05:02:49",
+  "price_points": 95,
+  "price_daily": 276,
   "usage_days": 273,
   "product_days": 273,
   "last_price": {
-    "date": "2026-09-01",
-    "value": 0.9673,
+    "date": "2026-09-02",
+    "value": 0.9778,
     "source": "public_embed",
     "note": "portal token-index-chart RSC"
   },
