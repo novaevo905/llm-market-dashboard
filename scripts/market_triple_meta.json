@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-09-28T05:51:40",
-  "price_points": 119,
-  "price_daily": 300,
+  "updated_at": "2026-09-29T06:09:03",
+  "price_points": 120,
+  "price_daily": 301,
   "usage_days": 301,
-  "product_days": 300,
+  "product_days": 301,
   "last_price": {
-    "date": "2026-09-26",
-    "value": 0.9938,
+    "date": "2026-09-27",
+    "value": 0.9961,
     "source": "public_embed",
     "note": "portal token-index-chart RSC"
   },
@@ -15,11 +15,11 @@
     "Total": "20530.1220"
   },
   "last_product": {
-    "date": "2026-09-26",
-    "price_sdllmtk": 0.9938,
-    "usage_total_b": 19855.7033,
-    "spend_usd_day": 19732597.939540002,
-    "product_raw": 19732.597939540003
+    "date": "2026-09-27",
+    "price_sdllmtk": 0.9961,
+    "usage_total_b": 20530.122,
+    "spend_usd_day": 20450054.5242,
+    "product_raw": 20450.0545242
   },
   "formula": "spend_usd_day = SDLLMTK * usage_total_b * 1000",
   "charts": [
