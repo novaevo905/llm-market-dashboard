@@ -1346,7 +1346,15 @@ def write_combined_dashboard(
     bundle = {
         "updated_at": datetime.now().isoformat(timespec="seconds"),
         "axis": axis_meta,
-        "price": {"series": price_series, "n_official": n_official, "data_end": last_p["date"] if last_p else None},
+        "price": {
+            "series": price_series,
+            "n_official": n_official,
+            "data_end": last_p["date"] if last_p else None,
+            "last_source": (price_rows[-1].get("source") if price_rows else None),
+            "stale_days": (
+                (date.today() - _parse_iso(price_rows[-1]["date"])).days if price_rows else None
+            ),
+        },
         "usage": usage_payload,
         "product": product_payload,
         "summary": {"price": last_p, "usage_week_total": last_u, "spend_week": last_x},
@@ -1705,7 +1713,8 @@ function renderMeta1() {{
     : t('noPrice');
 }}
 function renderFoot1() {{
-  document.getElementById('foot1').textContent = t('foot1') + (D.price.n_official || 0) + t('foot1b');
+  document.getElementById('foot1').textContent = t('foot1') + (D.price.n_official || 0) + t('foot1b')
+  + ' · source ' + (D.price.last_source || '-') + (D.price.stale_days > 0 ? ' · lag ' + D.price.stale_days + 'd' : '');
 }}
 (function() {{
   const series = (D.price && D.price.series) || [];
