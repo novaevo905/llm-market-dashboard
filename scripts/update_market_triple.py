@@ -158,6 +158,11 @@ def fetch_sdllmtk_product_page() -> dict[str, float]:
 
     Portal embed data went private on 2026-10-21; the marketing site still
     server-renders the latest daily close (rounded to 2 decimals).
+
+    Same-series evidence (2026-10-23): last portal value 2026-10-20 = 0.9411
+    rounds to the 0.94 the page prints as of Oct 21, i.e. same index + 2dp
+    quantisation (+/-0.005), not a different metric. sanity_check_window()
+    guards the case where that stops being true.
     """
     html = http_get(PRODUCT_INDEX_URL).replace('\\"', '"')
     m = re.search(
@@ -176,13 +181,43 @@ def fetch_sdllmtk_product_page() -> dict[str, float]:
     return {day: value}
 
 
-def fetch_price_any_source() -> tuple[dict[str, float], str]:
-    """Try official API -> public product page -> legacy portal RSC embed."""
+def sanity_check_window(
+    window: dict[str, float], existing: list[dict], source: str, max_dev: float = 0.25
+) -> None:
+    """Guard against the upstream silently redefining what the number means.
+
+    Different sources must stay on the same scale: if a fetched value deviates
+    from the last known price by more than max_dev, treat it as a source change
+    instead of pushing garbage into the CSV.
+    """
+    if source == "api_official" or not existing:
+        return
+    last = max(existing, key=lambda r: r["date"])
+    base = float(last["value"])
+    if base <= 0:
+        return
+    for d, v in window.items():
+        dev = abs(float(v) - base) / base
+        if dev > max_dev:
+            raise RuntimeError(
+                f"{source} value {d}={v} deviates {dev:.1%} from last known {last['date']}={base}; "
+                "refusing to merge (source scale changed?)"
+            )
+
+
+def fetch_price_any_source(existing: list[dict] | None = None) -> tuple[dict[str, float], str, list[str]]:
+    """Try official API -> public product page -> legacy portal RSC embed.
+
+    Returns (window, source_name, errors_of_skipped_sources). The caller must log
+    the errors: a silently discarded failure is how an upstream outage turns
+    into a green job with frozen data.
+    """
     token = (os.environ.get(API_TOKEN_ENV) or "").strip()
     errors: list[str] = []
     if token:
         try:
-            return fetch_sdllmtk_api(token), "api_official"
+            window = fetch_sdllmtk_api(token)
+            return window, "api_official", errors
         except Exception as exc:  # noqa: BLE001
             errors.append(f"api: {type(exc).__name__}: {exc}")
     else:
@@ -190,7 +225,9 @@ def fetch_price_any_source() -> tuple[dict[str, float], str]:
 
     for name, fn in (("product_page", fetch_sdllmtk_product_page), ("public_embed", fetch_sdllmtk_window)):
         try:
-            return fn(), name
+            window = fn()
+            sanity_check_window(window, existing or [], name)
+            return window, name, errors
         except Exception as exc:  # noqa: BLE001
             errors.append(f"{name}: {type(exc).__name__}: {exc}")
 
@@ -1525,7 +1562,7 @@ const I18N = {{
     noPrice: '無價格資料',
     noUsage: '無用量資料',
     noProduct: '無交叉資料',
-    foot1: '官方點（API／portal／官網）：',
+    foot1: '官方點（API／portal）＋官網讀數：',
     foot1b: ' · 其餘為圖表錨點/插值 · X 軸與②對齊（頭尾）',
     latest: 'Latest',
     mode: 'mode',
@@ -1569,7 +1606,7 @@ const I18N = {{
     noPrice: 'No price data',
     noUsage: 'No usage data',
     noProduct: 'No cross data',
-    foot1: 'Official public_embed points: ',
+    foot1: 'Official points (API/portal) + site readings: ',
     foot1b: ' · other points are chart anchors/interpolation · X-axis aligned with chart ②',
     latest: 'Latest',
     mode: 'mode',
@@ -2067,11 +2104,16 @@ def main() -> int:
 
     # 1 price
     price_rows = load_price_rows()
-    price_status: dict = {"source": None, "error": None, "stale_days": None}
+    price_status: dict = {"source": None, "error": None, "stale_days": None, "skipped": []}
+    # a total outage longer than this stops pretending and fails the job
+    MAX_SILENT_LAG_DAYS = 5
     if not args.skip_price:
         print("Fetching SDLLMTK price...")
         try:
-            window, price_source = fetch_price_any_source()
+            window, price_source, skipped = fetch_price_any_source(price_rows)
+            for err in skipped:
+                print("NOTE source skipped:", err)
+            price_status["skipped"] = skipped
             for d, v in sorted(window.items()):
                 print(f"  price {d} {v:.4f} [{price_source}]")
             backup(PRICE_CSV)
@@ -2080,9 +2122,11 @@ def main() -> int:
             print("price rows", len(price_rows), "source", price_source)
             price_status["source"] = price_source
         except Exception as exc:  # noqa: BLE001
-            # degradation is loud but non-fatal: keep last known price, keep publishing
+            # transient degradation stays non-fatal, but it must be visible:
+            # a green job with frozen data is worse than a red one.
             price_status["error"] = f"{type(exc).__name__}: {exc}"
             print("WARN price fetch failed:", price_status["error"])
+            print(f"::warning::SDLLMTK price fetch FAILED: {price_status['error']}")
             if not price_rows:
                 print("FAIL no price history at all -> nothing to chart")
                 return 1
@@ -2098,6 +2142,12 @@ def main() -> int:
                 f"::warning::SDLLMTK price stale {price_status['stale_days']} days "
                 f"(last {newest}, source {price_status['source'] or 'cache'})"
             )
+        if price_status["error"] and price_status["stale_days"] > MAX_SILENT_LAG_DAYS:
+            print(
+                f"FAIL price dead {price_status['stale_days']} days "
+                f"(> {MAX_SILENT_LAG_DAYS}) and no source works -> stop publishing stale data"
+            )
+            return 1
     price_daily = price_series_daily(price_rows)
 
     # 2 usage
