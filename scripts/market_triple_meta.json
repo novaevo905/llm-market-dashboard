@@ -1,9 +1,9 @@
 {
-  "updated_at": "2026-10-23T18:37:45",
+  "updated_at": "2026-10-23T10:38:31",
   "price_points": 142,
   "price_daily": 325,
-  "usage_days": 322,
-  "product_days": 322,
+  "usage_days": 326,
+  "product_days": 325,
   "price_status": {
     "source": "product_page",
     "error": null,
@@ -17,22 +17,22 @@
     "note": "silicondata product page (2dp close)"
   },
   "last_usage_total": {
-    "date": "2026-10-18",
-    "Total": "19328.8613"
+    "date": "2026-10-22",
+    "Total": "30608.0997"
   },
   "last_product": {
-    "date": "2026-10-18",
-    "price_sdllmtk": 0.9432,
-    "usage_total_b": 19328.8613,
-    "spend_usd_day": 18230981.97816,
-    "product_raw": 18230.98197816
+    "date": "2026-10-21",
+    "price_sdllmtk": 0.94,
+    "usage_total_b": 30532.6508,
+    "spend_usd_day": 28700691.752,
+    "product_raw": 28700.691752
   },
   "formula": "spend_usd_day = SDLLMTK * usage_total_b * 1000",
   "charts": [
-    "E:\\_Project\\llm-market-dashboard\\scripts\\market_triple_dashboard.html",
-    "E:\\_Project\\llm-market-dashboard\\scripts\\sdllmtk_chart.html",
-    "E:\\_Project\\llm-market-dashboard\\scripts\\openrouter_usage_chart.html",
-    "E:\\_Project\\llm-market-dashboard\\scripts\\expenditure_proxy_chart.html"
+    "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/market_triple_dashboard.html",
+    "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/sdllmtk_chart.html",
+    "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/openrouter_usage_chart.html",
+    "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/expenditure_proxy_chart.html"
   ],
-  "dashboard": "E:\\_Project\\llm-market-dashboard\\scripts\\market_triple_dashboard.html"
+  "dashboard": "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/market_triple_dashboard.html"
 }
