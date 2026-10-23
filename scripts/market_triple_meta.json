@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-23T18:49:42",
+  "updated_at": "2026-10-23T10:50:06",
   "price_points": 142,
   "price_daily": 325,
   "usage_days": 326,
@@ -21,7 +21,7 @@
   },
   "last_usage_total": {
     "date": "2026-10-22",
-    "Total": "30608.1045"
+    "Total": "30608.1454"
   },
   "last_product": {
     "date": "2026-10-21",
@@ -32,10 +32,10 @@
   },
   "formula": "spend_usd_day = SDLLMTK * usage_total_b * 1000",
   "charts": [
-    "E:\\_Project\\llm-market-dashboard\\scripts\\market_triple_dashboard.html",
-    "E:\\_Project\\llm-market-dashboard\\scripts\\sdllmtk_chart.html",
-    "E:\\_Project\\llm-market-dashboard\\scripts\\openrouter_usage_chart.html",
-    "E:\\_Project\\llm-market-dashboard\\scripts\\expenditure_proxy_chart.html"
+    "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/market_triple_dashboard.html",
+    "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/sdllmtk_chart.html",
+    "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/openrouter_usage_chart.html",
+    "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/expenditure_proxy_chart.html"
   ],
-  "dashboard": "E:\\_Project\\llm-market-dashboard\\scripts\\market_triple_dashboard.html"
+  "dashboard": "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/market_triple_dashboard.html"
 }
