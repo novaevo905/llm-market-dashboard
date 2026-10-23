@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-23T10:41:00",
+  "updated_at": "2026-10-23T18:45:34",
   "price_points": 142,
   "price_daily": 325,
   "usage_days": 326,
@@ -29,10 +29,10 @@
   },
   "formula": "spend_usd_day = SDLLMTK * usage_total_b * 1000",
   "charts": [
-    "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/market_triple_dashboard.html",
-    "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/sdllmtk_chart.html",
-    "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/openrouter_usage_chart.html",
-    "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/expenditure_proxy_chart.html"
+    "E:\\_Project\\llm-market-dashboard\\scripts\\market_triple_dashboard.html",
+    "E:\\_Project\\llm-market-dashboard\\scripts\\sdllmtk_chart.html",
+    "E:\\_Project\\llm-market-dashboard\\scripts\\openrouter_usage_chart.html",
+    "E:\\_Project\\llm-market-dashboard\\scripts\\expenditure_proxy_chart.html"
   ],
-  "dashboard": "/home/runner/work/llm-market-dashboard/llm-market-dashboard/scripts/market_triple_dashboard.html"
+  "dashboard": "E:\\_Project\\llm-market-dashboard\\scripts\\market_triple_dashboard.html"
 }

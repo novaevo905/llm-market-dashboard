@@ -232,9 +232,8 @@ def merge_price(existing: list[dict], window: dict[str, float], source: str = "p
     }
     by = {r["date"]: r for r in existing}
     for d, v in window.items():
-        for src in (source,):
-            if d not in by or rank.get(src, 0) >= rank.get(by[d].get("source"), 0):
-                by[d] = {"date": d, "value": v, "source": src, "note": note.get(src, "")}
+        if d not in by or rank.get(source, 0) >= rank.get(by[d].get("source"), 0):
+            by[d] = {"date": d, "value": v, "source": source, "note": note.get(source, "")}
     return [by[k] for k in sorted(by)]
 
 
@@ -575,7 +574,6 @@ new Chart(document.getElementById('c'), {{
 
 def write_price_chart(price_daily: dict[str, float], price_rows: list[dict]) -> None:
     series = [{"date": d, "value": round(v, 4)} for d, v in sorted(price_daily.items())]
-    off = [r for r in price_rows if r.get("source") == "public_embed"]
     html = _chart_shell(
         "① SDLLMTK 價格（USD / 百萬 tokens）",
         "Silicon Data LLM Token Expenditure Index · 官方近7日 + 歷史錨點插值 · "
