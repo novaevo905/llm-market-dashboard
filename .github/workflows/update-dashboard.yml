@@ -24,6 +24,10 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       - name: Update dashboard (SDLLMTK price daily)
         run: python scripts/update_market_triple.py --skip-mm
+        env:
+          # optional: portal login token -> official 4-decimal API instead of the
+          # 2-decimal public product-page fallback. Leave unset to use the fallback.
+          SILICONDATA_API_TOKEN: ${{ secrets.SILICONDATA_API_TOKEN }}
       - name: Publish index.html and price CSV
         run: |
           cp scripts/market_triple_dashboard.html index.html

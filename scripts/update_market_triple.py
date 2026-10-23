@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import re
 import shutil
 import sys
@@ -57,6 +58,13 @@ PROVIDER_STYLE = [
 
 EMBED_URL = "https://portal.silicondata.com/token-index-chart"
 LATEST_DATE_URL = "https://api.silicondata.com/backend/api/token-index/latest-date"
+API_INDEX_URL = "https://api.silicondata.com/backend/api/token-index/index"
+PRODUCT_INDEX_URL = (
+    "https://www.silicondata.com/products/silicon-index/llm-token-expenditure-index"
+)
+# set SILICONDATA_API_TOKEN (portal login token) to use the official 4-decimal API
+API_TOKEN_ENV = "SILICONDATA_API_TOKEN"
+OFFICIAL_SOURCES = {"api_official", "public_embed", "product_page"}
 MM_PAGE = "https://www.macromicro.me/charts/148532/world-openrouter-token-usage"
 MM_DATA = "https://www.macromicro.me/charts/data/148532"
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
@@ -106,6 +114,89 @@ def fetch_sdllmtk_window() -> dict[str, float]:
     return out
 
 
+# ---------- price: official API (needs token) ----------
+def fetch_sdllmtk_api(token: str, days_back: int = 21) -> dict[str, float]:
+    """POST /api/token-index/index. Returns {date: value}, skipping '-1' (no data)."""
+    end = date.today()
+    body = {
+        "token": "expenditure",
+        "index_version": "v1",
+        "starting_date": (end - timedelta(days=days_back)).isoformat(),
+        "ending_date": end.isoformat(),
+    }
+    req = urllib.request.Request(
+        API_INDEX_URL,
+        data=json.dumps(body).encode("utf-8"),
+        headers={
+            "User-Agent": UA,
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        payload = json.loads(resp.read().decode("utf-8", "replace"))
+    data = payload.get("data") or {}
+    out: dict[str, float] = {}
+    for d, v in (data.get("indexes") or {}).items():
+        try:
+            fv = float(v)
+        except (TypeError, ValueError):
+            continue
+        if fv < 0:  # -1 = no publication that day
+            continue
+        out[d] = fv
+    if not out:
+        raise RuntimeError(f"API returned no usable indexes (meta={payload.get('meta')})")
+    return out
+
+
+# ---------- price: public product page (2 decimals, daily close) ----------
+def fetch_sdllmtk_product_page() -> dict[str, float]:
+    """Read the public reading block on the siliconindex product page.
+
+    Portal embed data went private on 2026-10-21; the marketing site still
+    server-renders the latest daily close (rounded to 2 decimals).
+    """
+    html = http_get(PRODUCT_INDEX_URL).replace('\\"', '"')
+    m = re.search(
+        r'"llm-token"\s*:\s*\{\s*"value"\s*:\s*"([0-9.]+)"'
+        r'.{0,200}?"asOf"\s*:\s*"As of ([A-Za-z]{3,9}) (\d{1,2}), (\d{4})"',
+        html,
+        re.S,
+    )
+    if not m:
+        raise RuntimeError("product page reading block not found")
+    value = float(m.group(1))
+    ds = f"{m.group(2)} {m.group(3)} {m.group(4)}"
+    day = datetime.strptime(ds, "%b %d %Y").date().isoformat()
+    if value <= 0:
+        raise RuntimeError(f"product page value not positive: {value}")
+    return {day: value}
+
+
+def fetch_price_any_source() -> tuple[dict[str, float], str]:
+    """Try official API -> public product page -> legacy portal RSC embed."""
+    token = (os.environ.get(API_TOKEN_ENV) or "").strip()
+    errors: list[str] = []
+    if token:
+        try:
+            return fetch_sdllmtk_api(token), "api_official"
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"api: {type(exc).__name__}: {exc}")
+    else:
+        errors.append(f"api: skipped (no {API_TOKEN_ENV})")
+
+    for name, fn in (("product_page", fetch_sdllmtk_product_page), ("public_embed", fetch_sdllmtk_window)):
+        try:
+            return fn(), name
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{name}: {type(exc).__name__}: {exc}")
+
+    raise RuntimeError("all SDLLMTK sources failed -> " + " | ".join(errors))
+
+
 def load_price_rows() -> list[dict]:
     if not PRICE_CSV.exists():
         return []
@@ -124,19 +215,26 @@ def load_price_rows() -> list[dict]:
     return rows
 
 
-def merge_price(existing: list[dict], window: dict[str, float]) -> list[dict]:
+def merge_price(existing: list[dict], window: dict[str, float], source: str = "public_embed") -> list[dict]:
     rank = {
+        "api_official": 120,
         "public_embed": 100,
         "portal_api": 100,
+        "product_page": 90,
+        "manual": 60,
         "press_cio": 50,
         "approx_chart": 10,
-        "manual": 60,
+    }
+    note = {
+        "api_official": "api.silicondata.com /api/token-index/index",
+        "public_embed": "portal token-index-chart RSC",
+        "product_page": "silicondata product page (2dp close)",
     }
     by = {r["date"]: r for r in existing}
     for d, v in window.items():
-        src = "public_embed"
-        if d not in by or rank.get(src, 0) >= rank.get(by[d].get("source"), 0):
-            by[d] = {"date": d, "value": v, "source": src, "note": "portal token-index-chart RSC"}
+        for src in (source,):
+            if d not in by or rank.get(src, 0) >= rank.get(by[d].get("source"), 0):
+                by[d] = {"date": d, "value": v, "source": src, "note": note.get(src, "")}
     return [by[k] for k in sorted(by)]
 
 
@@ -488,9 +586,15 @@ def write_price_chart(price_daily: dict[str, float], price_rows: list[dict]) -> 
         "#f5a623",
     )
     # inject official note
+    counts: dict[str, int] = {}
+    for r in price_rows:
+        s = r.get("source") or "unknown"
+        counts[s] = counts.get(s, 0) + 1
+    mix = " · ".join(f"{k} {v}" for k, v in sorted(counts.items(), key=lambda kv: -kv[1]))
+    last_src = price_rows[-1].get("source") if price_rows else "-"
     html = html.replace(
         'id="leg"></div>',
-        f'id="leg">官方 public_embed 點數：{len(off)} · 其餘為圖表錨點/插值，非完整官方日收。</div>',
+        f'id="leg">最近一筆來源：{last_src} · 點數分布：{mix} · 其餘為錨點/插值，非完整官方日收。</div>',
     )
     CHART_PRICE.write_text(html, encoding="utf-8")
 
@@ -1100,7 +1204,7 @@ def write_combined_dashboard(
     Chart② owns the X domain. Right edge = last complete week end + 7 days
     (one reserved empty week). Charts ① and ③ pad/trim so head/tail match ②.
     """
-    n_official = sum(1 for r in price_rows if r.get("source") == "public_embed")
+    n_official = sum(1 for r in price_rows if r.get("source") in OFFICIAL_SOURCES)
 
     # raw price map (before axis pad)
     price_by_date: dict[str, float | None] = {
@@ -1415,7 +1519,7 @@ const I18N = {{
     noPrice: '無價格資料',
     noUsage: '無用量資料',
     noProduct: '無交叉資料',
-    foot1: '官方 public_embed 點：',
+    foot1: '官方點（API／portal／官網）：',
     foot1b: ' · 其餘為圖表錨點/插值 · X 軸與②對齊（頭尾）',
     latest: 'Latest',
     mode: 'mode',
@@ -1956,15 +2060,37 @@ def main() -> int:
 
     # 1 price
     price_rows = load_price_rows()
+    price_status: dict = {"source": None, "error": None, "stale_days": None}
     if not args.skip_price:
-        print("Fetching SDLLMTK public window...")
-        window = fetch_sdllmtk_window()
-        for d, v in sorted(window.items()):
-            print(f"  price {d} {v:.4f}")
-        backup(PRICE_CSV)
-        price_rows = merge_price(price_rows, window)
-        save_price(price_rows)
-        print("price rows", len(price_rows))
+        print("Fetching SDLLMTK price...")
+        try:
+            window, price_source = fetch_price_any_source()
+            for d, v in sorted(window.items()):
+                print(f"  price {d} {v:.4f} [{price_source}]")
+            backup(PRICE_CSV)
+            price_rows = merge_price(price_rows, window, price_source)
+            save_price(price_rows)
+            print("price rows", len(price_rows), "source", price_source)
+            price_status["source"] = price_source
+        except Exception as exc:  # noqa: BLE001
+            # degradation is loud but non-fatal: keep last known price, keep publishing
+            price_status["error"] = f"{type(exc).__name__}: {exc}"
+            print("WARN price fetch failed:", price_status["error"])
+            if not price_rows:
+                print("FAIL no price history at all -> nothing to chart")
+                return 1
+    if price_rows:
+        newest = max(r["date"] for r in price_rows)
+        price_status["last_date"] = newest
+        price_status["stale_days"] = (date.today() - datetime.strptime(newest, "%Y-%m-%d").date()).days
+        if price_status["stale_days"] > 2 and price_status["error"]:
+            print(f"WARN price stale {price_status['stale_days']} days (last {newest})")
+        if price_status["stale_days"] > 3:
+            # surface in the Actions UI/email instead of failing silently
+            print(
+                f"::warning::SDLLMTK price stale {price_status['stale_days']} days "
+                f"(last {newest}, source {price_status['source'] or 'cache'})"
+            )
     price_daily = price_series_daily(price_rows)
 
     # 2 usage
@@ -2030,6 +2156,7 @@ def main() -> int:
         "price_daily": len(price_daily),
         "usage_days": len(usage_total),
         "product_days": len(product_rows),
+        "price_status": price_status,
         "last_price": price_rows[-1] if price_rows else None,
         "last_usage_total": (
             {"date": usage_rows[-1]["date"], "Total": usage_rows[-1]["Total"]} if usage_rows else None
