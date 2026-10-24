@@ -1,9 +1,9 @@
 {
-  "updated_at": "2026-10-23T10:50:06",
-  "price_points": 142,
-  "price_daily": 325,
+  "updated_at": "2026-10-24T04:58:45",
+  "price_points": 143,
+  "price_daily": 326,
   "usage_days": 326,
-  "product_days": 325,
+  "product_days": 326,
   "price_status": {
     "source": "product_page",
     "error": null,
@@ -11,11 +11,11 @@
     "skipped": [
       "api: skipped (no SILICONDATA_API_TOKEN)"
     ],
-    "last_date": "2026-10-21"
+    "last_date": "2026-10-22"
   },
   "last_price": {
-    "date": "2026-10-21",
-    "value": 0.94,
+    "date": "2026-10-22",
+    "value": 0.95,
     "source": "product_page",
     "note": "silicondata product page (2dp close)"
   },
@@ -24,11 +24,11 @@
     "Total": "30608.1454"
   },
   "last_product": {
-    "date": "2026-10-21",
-    "price_sdllmtk": 0.94,
-    "usage_total_b": 30532.6508,
-    "spend_usd_day": 28700691.752,
-    "product_raw": 28700.691752
+    "date": "2026-10-22",
+    "price_sdllmtk": 0.95,
+    "usage_total_b": 30608.1454,
+    "spend_usd_day": 29077738.130000003,
+    "product_raw": 29077.73813
   },
   "formula": "spend_usd_day = SDLLMTK * usage_total_b * 1000",
   "charts": [
