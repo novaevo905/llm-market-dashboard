@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-10-24T04:58:45",
-  "price_points": 143,
-  "price_daily": 326,
+  "updated_at": "2026-10-25T05:14:25",
+  "price_points": 144,
+  "price_daily": 327,
   "usage_days": 326,
   "product_days": 326,
   "price_status": {
@@ -11,11 +11,11 @@
     "skipped": [
       "api: skipped (no SILICONDATA_API_TOKEN)"
     ],
-    "last_date": "2026-10-22"
+    "last_date": "2026-10-23"
   },
   "last_price": {
-    "date": "2026-10-22",
-    "value": 0.95,
+    "date": "2026-10-23",
+    "value": 0.93,
     "source": "product_page",
     "note": "silicondata product page (2dp close)"
   },
