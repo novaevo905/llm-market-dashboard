@@ -1,16 +1,14 @@
 {
-  "updated_at": "2026-10-26T05:16:50",
+  "updated_at": "2026-10-27T05:32:26",
   "price_points": 145,
   "price_daily": 328,
   "usage_days": 329,
   "product_days": 328,
   "price_status": {
-    "source": "product_page",
-    "error": null,
-    "stale_days": 2,
-    "skipped": [
-      "api: skipped (no SILICONDATA_API_TOKEN)"
-    ],
+    "source": null,
+    "error": "RuntimeError: all SDLLMTK sources failed -> api: skipped (no SILICONDATA_API_TOKEN) | product_page: RuntimeError: product page reading block not found | public_embed: RuntimeError: empty SDLLMTK window",
+    "stale_days": 3,
+    "skipped": [],
     "last_date": "2026-10-24"
   },
   "last_price": {
