@@ -1,32 +1,35 @@
 {
-  "updated_at": "2026-10-29T06:24:16",
-  "price_points": 145,
-  "price_daily": 328,
+  "updated_at": "2026-10-30T06:23:24",
+  "price_points": 151,
+  "price_daily": 332,
   "usage_days": 329,
-  "product_days": 328,
+  "product_days": 329,
   "price_status": {
-    "source": null,
-    "error": "RuntimeError: all SDLLMTK sources failed -> api: skipped (no SILICONDATA_API_TOKEN) | product_page: RuntimeError: product page reading block not found | public_embed: RuntimeError: empty SDLLMTK window",
-    "stale_days": 5,
-    "skipped": [],
-    "last_date": "2026-10-24"
+    "source": "public_embed",
+    "error": null,
+    "stale_days": 2,
+    "skipped": [
+      "api: skipped (no SILICONDATA_API_TOKEN)",
+      "product_page: RuntimeError: product page reading block not found"
+    ],
+    "last_date": "2026-10-28"
   },
   "last_price": {
-    "date": "2026-10-24",
-    "value": 0.94,
-    "source": "product_page",
-    "note": "silicondata product page (2dp close)"
+    "date": "2026-10-28",
+    "value": 0.9141,
+    "source": "public_embed",
+    "note": "portal token-index-chart RSC"
   },
   "last_usage_total": {
     "date": "2026-10-25",
     "Total": "23359.3326"
   },
   "last_product": {
-    "date": "2026-10-24",
-    "price_sdllmtk": 0.94,
-    "usage_total_b": 23433.5726,
-    "spend_usd_day": 22027558.244,
-    "product_raw": 22027.558244
+    "date": "2026-10-25",
+    "price_sdllmtk": 0.9526,
+    "usage_total_b": 23359.3326,
+    "spend_usd_day": 22252100.23476,
+    "product_raw": 22252.10023476
   },
   "formula": "spend_usd_day = SDLLMTK * usage_total_b * 1000",
   "charts": [
